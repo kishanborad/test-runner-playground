@@ -6,6 +6,7 @@ import { executeTest } from './engine/executor';
 import TestListPanel from './panels/TestListPanel';
 import ShopPanel from './panels/ShopPanel';
 import ReportPanel from './panels/ReportPanel';
+import EditorTab from './editor/EditorTab';
 
 const BUILT_IN_SHOP_URL = '/shop.html';
 
@@ -103,7 +104,15 @@ export default function App() {
             onRun={handleRun}
             tab={tab}
             onTabChange={setTab}
-            editorSlot={<div className="p-3 text-panel-text/30 text-sm">Editor — Task 8</div>}
+            editorSlot={
+              <EditorTab
+                source={source}
+                onChange={(v) => {
+                  setSource(v);
+                  setSelectedId(null);
+                }}
+              />
+            }
             customUrl={customUrl}
             onCustomUrlChange={setCustomUrl}
           />
