@@ -1,10 +1,10 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './CartContext';
 import ShopNav from './ShopNav';
-
-function Placeholder({ name }: { name: string }) {
-  return <div className="p-8 text-shop-muted">{name} — coming in Task 3</div>;
-}
+import ProductList from './ProductList';
+import ProductDetail from './ProductDetail';
+import Cart from './Cart';
+import Checkout from './Checkout';
 
 export default function ShopApp() {
   return (
@@ -14,10 +14,10 @@ export default function ShopApp() {
           <ShopNav />
           <main className="max-w-6xl mx-auto px-4 py-6">
             <Routes>
-              <Route path="/" element={<Placeholder name="Product List" />} />
-              <Route path="/product/:id" element={<Placeholder name="Product Detail" />} />
-              <Route path="/cart" element={<Placeholder name="Cart" />} />
-              <Route path="/checkout" element={<Placeholder name="Checkout" />} />
+              <Route path="/" element={<ProductList />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
             </Routes>
           </main>
         </div>
