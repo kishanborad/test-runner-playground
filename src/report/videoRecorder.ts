@@ -4,6 +4,7 @@ export class VideoRecorder {
   private canvas: HTMLCanvasElement | null = null;
   private animFrame = 0;
   private iframe: HTMLIFrameElement | null = null;
+  private pendingImg: HTMLImageElement | null = null;
 
   get supported(): boolean {
     return typeof MediaRecorder !== 'undefined';
@@ -47,15 +48,17 @@ export class VideoRecorder {
         const data = new XMLSerializer().serializeToString(doc);
         const blob = new Blob([data], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
+        if (this.pendingImg) this.pendingImg.onload = null;
         const img = new Image();
+        this.pendingImg = img;
         img.onload = () => {
-          ctx.drawImage(img, 0, 0, this.canvas!.width, this.canvas!.height);
+          if (!this.canvas) return;
+          ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
           URL.revokeObjectURL(url);
         };
         img.src = url;
       }
     } catch {
-      // Cross-origin or serialization error — draw a placeholder frame
       ctx.fillStyle = '#1e1e1e';
       ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
       ctx.fillStyle = '#666';
@@ -67,6 +70,10 @@ export class VideoRecorder {
 
   async stop(): Promise<Blob | null> {
     cancelAnimationFrame(this.animFrame);
+    if (this.pendingImg) {
+      this.pendingImg.onload = null;
+      this.pendingImg = null;
+    }
 
     return new Promise((resolve) => {
       if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
@@ -79,7 +86,7 @@ export class VideoRecorder {
         this.chunks = [];
         this.canvas = null;
         this.iframe = null;
-        resolve(blob);
+        resolve(blob.size > 0 ? blob : null);
       };
 
       this.mediaRecorder.stop();
