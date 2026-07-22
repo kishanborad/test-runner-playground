@@ -7,11 +7,14 @@ import TestListPanel from './panels/TestListPanel';
 import ShopPanel from './panels/ShopPanel';
 import ReportPanel from './panels/ReportPanel';
 import EditorTab from './editor/EditorTab';
+import html2canvas from 'html2canvas';
+import { VideoRecorder } from './report/videoRecorder';
 
-const BUILT_IN_SHOP_URL = '/shop.html';
+const BUILT_IN_SHOP_URL = import.meta.env.BASE_URL + 'shop.html';
 
 export default function App() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoRef = useRef(new VideoRecorder());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [source, setSource] = useState('');
   const [tab, setTab] = useState<'list' | 'editor'>('list');
@@ -21,6 +24,7 @@ export default function App() {
   const [liveResults, setLiveResults] = useState<StepResult[]>([]);
   const [runningIndex, setRunningIndex] = useState(-1);
   const [completedRun, setCompletedRun] = useState<TestRun | null>(null);
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
 
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
   const [highlight, setHighlight] = useState<HighlightInfo | null>(null);
@@ -47,6 +51,7 @@ export default function App() {
     setRunningIndex(0);
     setCursorPos(null);
     setHighlight(null);
+    setVideoBlob(null);
 
     // Reset shop to home before running
     if (iframe.contentWindow) {
@@ -55,6 +60,7 @@ export default function App() {
     }
 
     const startedAt = Date.now();
+    videoRef.current.start(iframe);
 
     try {
       const results = await executeTest(parsed.steps, iframe, {
@@ -71,7 +77,20 @@ export default function App() {
         },
         onCursorMove: async (x, y) => setCursorPos({ x, y }),
         onHighlight: (info) => setHighlight(info),
-        onScreenshot: async () => undefined, // Added in Task 8
+        onScreenshot: async () => {
+          try {
+            const doc = iframe.contentDocument;
+            if (!doc?.body) return undefined;
+            const canvas = await html2canvas(doc.body, {
+              width: iframe.clientWidth,
+              height: iframe.clientHeight,
+              useCORS: true,
+            });
+            return canvas.toDataURL('image/png');
+          } catch {
+            return undefined;
+          }
+        },
       });
       void results;
     } catch (err) {
@@ -80,6 +99,8 @@ export default function App() {
       setRunning(false);
       setCursorPos(null);
       setHighlight(null);
+      const blob = await videoRef.current.stop();
+      if (blob) setVideoBlob(blob);
     }
   }, [source, running]);
 
@@ -135,6 +156,7 @@ export default function App() {
             run={completedRun}
             liveResults={liveResults}
             runningIndex={runningIndex}
+            videoBlob={videoBlob}
           />
         </div>
       </div>
