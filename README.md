@@ -8,7 +8,7 @@ A browser-based Playwright-style test runner. Write tests against an embedded de
 
 Three-panel layout:
 
-- **Left** — pick from 8 pre-written tests or write your own in a Monaco editor with Playwright API autocomplete
+- **Left** — pick from 12 pre-written tests or write your own in a Monaco editor with Playwright API autocomplete
 - **Center** — an embedded mini e-commerce shop running in an iframe. During execution, an animated cursor moves to each element, highlights flash green/red, and tooltips show what's happening
 - **Right** — live execution log with pass/fail indicators, step timing, and expandable screenshot previews. After a run, download an HTML report or a video recording
 
@@ -24,6 +24,10 @@ Three-panel layout:
 | Checkout flow | Fill shipping form, submit, verify order confirmation |
 | Form validation | Submit empty form, verify error messages |
 | Responsive layout | Toggle mobile nav menu |
+| Search with no results | Search for nonexistent product, verify zero cards |
+| Empty cart state | Navigate to cart without items, verify empty message |
+| Partial form validation | Fill only some fields, verify errors block checkout |
+| Quantity minimum boundary | Verify quantity cannot decrease below 1 |
 
 ## Supported Playwright API
 
@@ -109,7 +113,7 @@ src/
     generateReport.ts Self-contained HTML report builder
     videoRecorder.ts  MediaRecorder wrapper
   tests/          # Pre-written test definitions
-    prewritten.ts   8 test cases
+    prewritten.ts   12 test cases (8 happy path + 4 failure scenarios)
   types.ts        # Shared TypeScript types
   App.tsx         # Root component (three-panel layout)
 ```
