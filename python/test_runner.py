@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 class TestStep:
     """Represents a single step within a test case."""
 
+    __test__ = False  # prevent pytest from treating this dataclass as a test class
+
     index: int
     action: str          # navigate | click | type | assert | wait | screenshot
     target: str          # CSS selector, URL, or assertion text
@@ -70,6 +72,8 @@ class StepResult:
 class TestCase:
     """A named collection of steps that form one logical test."""
 
+    __test__ = False  # prevent pytest from treating this dataclass as a test class
+
     id: str
     name: str
     description: str
@@ -86,6 +90,8 @@ class TestCase:
 @dataclass
 class TestResult:
     """Complete result for one TestCase execution."""
+
+    __test__ = False  # prevent pytest from treating this dataclass as a test class
 
     run_id: str
     test_id: str
@@ -350,6 +356,8 @@ class TestRunner:
 
     Supports sequential and parallel execution modes.
     """
+
+    __test__ = False  # prevent pytest from treating this class as a test class
 
     def __init__(
         self,

@@ -39,7 +39,6 @@ from performance_monitor import (
     _iso_now,
     _percentile,
     build_parser,
-    duration_trend,
     load_baseline,
     main,
     print_text_report,
@@ -95,11 +94,11 @@ def _make_aggregated(
         url="http://localhost:5173",
         status_code=200,
         timing=TimingBreakdown(
-            dns_lookup_ms=15.0,
-            connect_ms=30.0,
+            dns_lookup_ms=round(mean_ms * 0.05, 1),
+            connect_ms=round(mean_ms * 0.10, 1),
             tls_handshake_ms=0.0,
-            ttfb_ms=90.0,
-            content_transfer_ms=210.0,
+            ttfb_ms=round(mean_ms * 0.30, 1),
+            content_transfer_ms=round(mean_ms * 0.70, 1),
             total_ms=mean_ms,
         ),
         response_size_bytes=int(size_bytes),
@@ -561,6 +560,7 @@ class TestPerformanceMonitorCLI:
             ):
                 main()
         out = capsys.readouterr().out
-        # Should contain JSON output
-        parsed = json.loads(out)
+        # main() prints a progress line before the JSON block; find the JSON start
+        json_start = out.index("{")
+        parsed = json.loads(out[json_start:])
         assert "url" in parsed

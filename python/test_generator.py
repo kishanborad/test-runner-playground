@@ -410,6 +410,8 @@ test.describe("Forms", () => {{
 class TestGenerator:
     """Turns a PageAnalysis into test files in the requested format(s)."""
 
+    __test__ = False  # prevent pytest from treating this class as a test class
+
     def __init__(self, max_links: int = 10, max_buttons: int = 8) -> None:
         self.max_links = max_links
         self.max_buttons = max_buttons
