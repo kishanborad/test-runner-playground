@@ -10,11 +10,12 @@
 #   docker run --rm test-runner tr-a11y --url http://host.docker.internal:5173
 # ────────────────────────────────────────────────────────────────────────────
 
-FROM python:3.12-slim AS base
+FROM python:3.12-slim-bookworm AS base
 
 # ── system dependencies ──────────────────────────────────────────────────────
 # Install Chromium and its runtime libraries for headless browser testing.
 # Also install curl/wget for healthcheck support.
+# Pinned to Bookworm to ensure stable package names.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         chromium \
         chromium-driver \
@@ -22,7 +23,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         wget \
         ca-certificates \
         fonts-liberation \
-        libappindicator3-1 \
         libasound2 \
         libatk-bridge2.0-0 \
         libatk1.0-0 \
