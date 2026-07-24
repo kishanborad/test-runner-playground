@@ -107,17 +107,24 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-panel-bg text-panel-text">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-2 border-b border-panel-border">
-        <h1 className="text-sm font-bold text-panel-text">
-          Test Runner Playground
-        </h1>
-        <span className="text-xs text-panel-text/40">Playwright-style testing in the browser</span>
+      <header className="flex items-center justify-between px-6 py-3 border-b border-panel-border bg-panel-surface backdrop-blur-glass">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-panel-accentDim to-panel-accent flex items-center justify-center shadow-glow">
+            <span className="text-white text-sm font-bold">TR</span>
+          </div>
+          <h1 className="text-lg font-semibold bg-gradient-to-r from-panel-text to-panel-secondary bg-clip-text text-transparent">
+            Test Runner Playground
+          </h1>
+        </div>
+        <span className="text-xs text-panel-muted tracking-wide">
+          Playwright-style testing in the browser
+        </span>
       </header>
 
       {/* Three panels */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left panel */}
-        <div className="w-72 border-r border-panel-border shrink-0">
+        <div className="w-72 border-r border-panel-border shrink-0 bg-panel-surface backdrop-blur-glass">
           <TestListPanel
             selectedId={selectedId}
             onSelect={handleSelect}
@@ -151,7 +158,7 @@ export default function App() {
         </div>
 
         {/* Right panel */}
-        <div className="w-80 border-l border-panel-border shrink-0">
+        <div className="w-80 border-l border-panel-border shrink-0 bg-panel-surface backdrop-blur-glass">
           <ReportPanel
             run={completedRun}
             liveResults={liveResults}

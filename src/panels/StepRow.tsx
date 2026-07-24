@@ -8,31 +8,42 @@ interface Props {
 }
 
 export default function StepRow({ index, result, expanded, onToggle }: Props) {
-  const icon = result.status === 'passed' ? '✓' : result.status === 'failed' ? '✗' : '⏳';
-  const color =
-    result.status === 'passed'
-      ? 'text-panel-success'
-      : result.status === 'failed'
-        ? 'text-panel-error'
-        : 'text-panel-warn';
+  const isPassed = result.status === 'passed';
+  const isFailed = result.status === 'failed';
+
+  const borderColor = isPassed
+    ? 'border-l-panel-success'
+    : isFailed
+      ? 'border-l-panel-error'
+      : 'border-l-panel-muted';
+
+  const dotColor = isPassed
+    ? 'bg-panel-success'
+    : isFailed
+      ? 'bg-panel-error'
+      : 'bg-panel-warn';
 
   return (
-    <div className="border-b border-panel-border">
+    <div className={`border-b border-panel-border border-l-2 ${borderColor}`}>
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-panel-surface text-sm">
-        <span className={`font-mono ${color}`}>{icon}</span>
-        <span className="text-panel-text/60 font-mono w-6">{index + 1}.</span>
-        <span className="text-panel-text flex-1 truncate">{result.step.raw}</span>
-        <span className="text-panel-text/40 text-xs">{result.duration.toFixed(0)}ms</span>
+        className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-white/[0.03] text-sm transition-colors duration-150">
+        <span
+          className={`w-2 h-2 rounded-full shrink-0 ${dotColor} ${
+            !isPassed && !isFailed ? 'animate-pulse' : ''
+          }`}
+        />
+        <span className="text-panel-muted font-mono text-xs w-5 shrink-0">{index + 1}.</span>
+        <span className="text-panel-secondary flex-1 truncate">{result.step.raw}</span>
+        <span className="text-panel-muted text-xs font-mono shrink-0">{result.duration.toFixed(0)}ms</span>
       </button>
       {expanded && (
-        <div className="px-3 pb-3 space-y-2">
+        <div className="px-4 pb-3 space-y-2 ml-5">
           {result.error && (
             <p className="text-panel-error text-xs">{result.error}</p>
           )}
           {result.expected && (
-            <p className="text-xs text-panel-text/60">
+            <p className="text-xs text-panel-muted">
               Expected: <span className="text-panel-success">{result.expected}</span>
               {result.actual && (
                 <> | Actual: <span className="text-panel-error">{result.actual}</span></>
@@ -43,7 +54,7 @@ export default function StepRow({ index, result, expanded, onToggle }: Props) {
             <img
               src={result.screenshot}
               alt={`Step ${index + 1} screenshot`}
-              className="rounded border border-panel-border max-h-48 w-full object-contain"
+              className="rounded-lg border border-panel-border max-h-48 w-full object-contain"
             />
           )}
         </div>

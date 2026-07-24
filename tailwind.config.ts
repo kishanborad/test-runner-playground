@@ -1,13 +1,12 @@
 import type { Config } from 'tailwindcss';
 
 export default {
-  content: [
-    './index.html',
-    './shop.html',
-    './src/**/*.{ts,tsx}',
-  ],
+  content: ['./index.html', './shop.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Poppins', 'system-ui', 'sans-serif'],
+      },
       colors: {
         shop: {
           bg: '#f8fafc',
@@ -20,15 +19,27 @@ export default {
           error: '#ef4444',
         },
         panel: {
-          bg: '#1e1e1e',
-          surface: '#252526',
-          border: '#3e3e42',
-          text: '#cccccc',
-          accent: '#007acc',
-          success: '#4ec9b0',
-          error: '#f14c4c',
-          warn: '#cca700',
+          bg: '#050816',
+          deep: '#0a0a1a',
+          surface: 'rgba(20, 20, 30, 0.7)',
+          border: 'rgba(255, 255, 255, 0.08)',
+          borderHover: 'rgba(255, 255, 255, 0.15)',
+          text: '#f4f4f6',
+          secondary: '#aaa6c3',
+          muted: '#64648a',
+          accent: '#818cf8',
+          accentDim: '#6366f1',
+          success: '#22c55e',
+          error: '#ef4444',
+          warn: '#f59e0b',
         },
+      },
+      boxShadow: {
+        glass: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        glow: '0 0 20px rgba(99, 102, 241, 0.15)',
+      },
+      backdropBlur: {
+        glass: '12px',
       },
     },
   },

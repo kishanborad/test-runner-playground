@@ -43,20 +43,24 @@ export default function ReportPanel({ run, liveResults, runningIndex, videoBlob 
 
   if (results.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-panel-text/30 text-sm">
+      <div className="flex items-center justify-center h-full text-panel-muted text-sm">
         Select a test and click Run
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-panel-bg">
+    <div className="flex flex-col h-full">
       {/* Summary bar */}
-      <div className="flex items-center gap-4 px-4 py-3 border-b border-panel-border text-sm">
-        {run && <span className="font-medium text-panel-text">{run.name}</span>}
-        <span className="text-panel-success">{passed} passed</span>
-        <span className="text-panel-error">{failed} failed</span>
-        <span className="text-panel-text/40 ml-auto">{(totalDuration / 1000).toFixed(1)}s</span>
+      <div className="flex items-center gap-4 px-4 py-3 border-b border-panel-border text-sm bg-panel-surface">
+        {run && <span className="font-semibold text-panel-text">{run.name}</span>}
+        <span className="px-2 py-0.5 rounded-full bg-panel-success/10 text-panel-success text-xs font-medium">
+          {passed} passed
+        </span>
+        <span className="px-2 py-0.5 rounded-full bg-panel-error/10 text-panel-error text-xs font-medium">
+          {failed} failed
+        </span>
+        <span className="text-panel-muted ml-auto font-mono text-xs">{(totalDuration / 1000).toFixed(1)}s</span>
         {isRunning && (
           <span className="text-panel-warn animate-pulse">Running step {runningIndex + 1}...</span>
         )}
@@ -67,13 +71,17 @@ export default function ReportPanel({ run, liveResults, runningIndex, videoBlob 
         <div className="flex items-center gap-2 px-4 py-2 border-b border-panel-border">
           <button
             onClick={handleDownloadReport}
-            className="px-3 py-1 text-xs bg-panel-accent text-white rounded hover:bg-blue-700">
+            className="px-4 py-1.5 text-xs font-medium text-white rounded-lg
+              bg-gradient-to-r from-panel-accentDim to-panel-accent
+              hover:shadow-glow transition-all duration-200">
             Download Report
           </button>
           {videoBlob && (
             <button
               onClick={handleDownloadVideo}
-              className="px-3 py-1 text-xs bg-panel-surface text-panel-text border border-panel-border rounded hover:bg-panel-border">
+              className="px-4 py-1.5 text-xs font-medium text-panel-secondary rounded-lg
+                border border-panel-border hover:border-panel-borderHover hover:text-panel-text
+                transition-all duration-200">
               Download Video
             </button>
           )}

@@ -12,18 +12,20 @@ interface Props {
 const ShopPanel = forwardRef<HTMLIFrameElement, Props>(
   ({ shopUrl, cursorPos, highlight, overlayVisible }, ref) => {
     return (
-      <div className="relative h-full bg-white">
-        <iframe
-          ref={ref}
-          src={shopUrl}
-          className="w-full h-full border-0"
-          title="Demo Shop"
-        />
-        <Overlay
-          cursorPos={cursorPos}
-          highlight={highlight}
-          visible={overlayVisible}
-        />
+      <div className="relative h-full bg-panel-bg flex flex-col">
+        <div className="flex-1 relative overflow-hidden border-2 border-panel-border rounded-lg m-2 shadow-glass">
+          <iframe
+            ref={ref}
+            src={shopUrl}
+            className="w-full h-full border-0"
+            title="Demo Shop"
+          />
+          <Overlay
+            cursorPos={cursorPos}
+            highlight={highlight}
+            visible={overlayVisible}
+          />
+        </div>
       </div>
     );
   },
