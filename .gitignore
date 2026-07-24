@@ -7,3 +7,44 @@ dist
 coverage
 *.tsbuildinfo
 .superpowers
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+*.egg
+.eggs/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+.hypothesis/
+.venv/
+venv/
+ENV/
+env/
+
+# Test runner outputs
+results/
+reports/
+generated/
+baselines/
+
+# Docker
+.docker/

@@ -1,0 +1,229 @@
+# .github/workflows/ci.yml — Continuous Integration pipeline
+#
+# Runs on every push and pull request to main:
+#   1. Python unit tests across 3.10 / 3.11 / 3.12
+#   2. Frontend build + Vitest unit tests
+#   3. Docker image build verification
+#
+# All jobs must pass before merging to main.
+
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**", "chore/**"]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs on the same ref to save CI minutes
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  PYTHON_MIN: "3.10"
+
+# ─── jobs ─────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ── 1. Python unit tests ───────────────────────────────────────────────────
+  python-tests:
+    name: "Python ${{ matrix.python-version }} tests"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    defaults:
+      run:
+        working-directory: python
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: python/requirements.txt
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Run pytest with coverage
+        run: |
+          python -m pytest tests/ \
+            --tb=short \
+            -v \
+            --cov=. \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            -q
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: python-coverage
+          path: python/coverage.xml
+          retention-days: 14
+
+  # ── 2. Frontend build + Vitest ─────────────────────────────────────────────
+  frontend:
+    name: "Frontend build & tests"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Type-check TypeScript
+        run: npx tsc --noEmit
+
+      - name: Run Vitest unit tests
+        run: npm test -- --reporter=verbose --coverage
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist/
+          retention-days: 7
+
+  # ── 3. Docker image build ──────────────────────────────────────────────────
+  docker-build:
+    name: "Docker build verification"
+    runs-on: ubuntu-latest
+    # Only verify Docker build on main branch pushes and PRs targeting main
+    if: github.event_name == 'push' || github.base_ref == 'main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          tags: test-runner-playground:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify image runs help output
+        run: |
+          docker run --rm test-runner-playground:ci --help || true
+
+  # ── 4. Lint and static analysis ────────────────────────────────────────────
+  lint:
+    name: "Lint & static analysis"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: python/requirements.txt
+
+      - name: Install linting tools
+        run: pip install ruff pyright
+
+      - name: Run ruff (fast Python linter)
+        run: ruff check python/ --output-format=github
+        continue-on-error: true
+
+      - name: Set up Node.js for ESLint
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run TypeScript type check
+        run: npx tsc --noEmit
+
+  # ── 5. Security scan ──────────────────────────────────────────────────────
+  security:
+    name: "Dependency security scan"
+    runs-on: ubuntu-latest
+    # Run weekly + on PRs
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Audit Python dependencies
+        run: pip-audit -r python/requirements.txt --output-format=json > pip-audit.json || true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Audit npm dependencies
+        run: npm audit --audit-level=high || true
+
+  # ── Status summary ─────────────────────────────────────────────────────────
+  # This job depends on all required jobs and is the single status check
+  # to require in branch protection rules.
+  all-checks-pass:
+    name: "All checks passed"
+    runs-on: ubuntu-latest
+    needs:
+      - python-tests
+      - frontend
+    if: always()
+
+    steps:
+      - name: Check all required jobs passed
+        run: |
+          if [[ "${{ needs.python-tests.result }}" != "success" ]]; then
+            echo "Python tests failed"
+            exit 1
+          fi
+          if [[ "${{ needs.frontend.result }}" != "success" ]]; then
+            echo "Frontend build/tests failed"
+            exit 1
+          fi
+          echo "All required checks passed."

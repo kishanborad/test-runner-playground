@@ -1,0 +1,186 @@
+# docker-compose.yml — Test automation stack for test-runner-playground
+#
+# Services:
+#   test-runner   — Python test engine (runs against TARGET_URL)
+#   report-server — Nginx serving HTML reports on port 8080
+#
+# Usage:
+#   docker compose up --build
+#   docker compose run test-runner tr-a11y --url http://host.docker.internal:5173
+#   docker compose run test-runner tr-generate --url http://host.docker.internal:5173
+#   docker compose run test-runner tr-perf --url http://host.docker.internal:5173 --runs 5
+#
+# Environment variables (override in .env or via -e flag):
+#   TARGET_URL      Base URL of the app under test (default: host.docker.internal:5173)
+#   WORKERS         Parallel test workers (default: 2)
+#   OUTPUT_FORMAT   json | junit | summary (default: json)
+#   TEST_SUITE      Suite name label for reports (default: smoke)
+
+version: "3.9"
+
+# ─── shared volumes ───────────────────────────────────────────────────────────
+volumes:
+  test-results:
+    driver: local
+  test-reports:
+    driver: local
+
+# ─── services ─────────────────────────────────────────────────────────────────
+services:
+
+  # ── test-runner ─────────────────────────────────────────────────────────────
+  # Primary test execution service. Runs the Python test suite against TARGET_URL,
+  # writes JSON results to the shared volume, then triggers report generation.
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: test-runner-playground:latest
+    container_name: tr-engine
+
+    environment:
+      TARGET_URL:     ${TARGET_URL:-http://host.docker.internal:5173}
+      WORKERS:        ${WORKERS:-2}
+      OUTPUT_FORMAT:  ${OUTPUT_FORMAT:-json}
+      TEST_SUITE:     ${TEST_SUITE:-smoke}
+      PYTHONUNBUFFERED: "1"
+
+    # Default command: run the built-in smoke suite and write to /app/results
+    command: >
+      python test_runner.py
+        --url    ${TARGET_URL:-http://host.docker.internal:5173}
+        --workers ${WORKERS:-2}
+        --output /app/results
+        --format ${OUTPUT_FORMAT:-json}
+
+    volumes:
+      - test-results:/app/results
+      - test-reports:/app/reports
+
+    # Expose results directory for inspection
+    ports: []
+
+    # Extra hosts makes host.docker.internal work on Linux (on Mac/Win it's automatic)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    # Restart policy: don't restart automatically — this is a one-shot job service
+    restart: "no"
+
+    # Healthcheck inherited from Dockerfile image
+    healthcheck:
+      test: ["CMD", "python", "test_runner.py", "--help"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+    # Labels for visibility in docker ps / portainer
+    labels:
+      com.test-runner.service: "engine"
+      com.test-runner.version: "1.0.0"
+
+  # ── report-builder ──────────────────────────────────────────────────────────
+  # Generates HTML and JUnit XML reports from the JSON results volume.
+  # Run after the test-runner exits (depends_on with condition).
+  report-builder:
+    image: test-runner-playground:latest
+    container_name: tr-reporter
+    depends_on:
+      test-runner:
+        condition: service_completed_successfully
+
+    command: >
+      python report_builder.py
+        --results /app/results
+        --out     /app/reports
+        --format  all
+
+    volumes:
+      - test-results:/app/results
+      - test-reports:/app/reports
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    restart: "no"
+
+    labels:
+      com.test-runner.service: "reporter"
+
+  # ── report-server ───────────────────────────────────────────────────────────
+  # Lightweight Nginx container that serves the generated HTML reports on :8080.
+  # Visit http://localhost:8080 after `docker compose up` to browse results.
+  report-server:
+    image: nginx:1.27-alpine
+    container_name: tr-report-server
+    depends_on:
+      - report-builder
+
+    ports:
+      - "${REPORT_PORT:-8080}:80"
+
+    volumes:
+      - test-reports:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 3s
+
+    labels:
+      com.test-runner.service: "report-server"
+
+  # ── accessibility-checker ──────────────────────────────────────────────────
+  # Optional: run the a11y checker as a separate service.
+  # Usage: docker compose run a11y-checker
+  a11y-checker:
+    image: test-runner-playground:latest
+    container_name: tr-a11y
+    profiles:
+      - a11y           # Only start when explicitly requested
+
+    command: >
+      python accessibility_checker.py
+        --url    ${TARGET_URL:-http://host.docker.internal:5173}
+        --format html
+        --out    /app/reports/a11y_report.html
+
+    volumes:
+      - test-reports:/app/reports
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    restart: "no"
+
+  # ── performance-monitor ────────────────────────────────────────────────────
+  # Optional: run the performance monitor as a separate service.
+  # Usage: docker compose run perf-monitor
+  perf-monitor:
+    image: test-runner-playground:latest
+    container_name: tr-perf
+    profiles:
+      - perf           # Only start when explicitly requested
+
+    command: >
+      python performance_monitor.py
+        --url   ${TARGET_URL:-http://host.docker.internal:5173}
+        --runs  ${PERF_RUNS:-5}
+        --out   /app/reports/perf
+        --format json
+        --save-baseline /app/reports/baseline.json
+
+    volumes:
+      - test-reports:/app/reports
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    restart: "no"
