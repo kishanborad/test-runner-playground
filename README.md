@@ -122,6 +122,10 @@ src/
 
 Paste any URL in the input field to run tests against an external site instead of the built-in shop. Cross-origin iframes will show a clear error message since DOM access is blocked by browser security.
 
+## AI tools
+
+Built with [Claude Code](https://claude.ai/code) as the AI copilot for code generation, agent-driven development, and automated testing workflows.
+
 ## Author
 
 Kishan Borad
