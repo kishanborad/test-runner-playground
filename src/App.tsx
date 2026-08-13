@@ -9,6 +9,7 @@ import ReportPanel from './panels/ReportPanel';
 import EditorTab from './editor/EditorTab';
 import html2canvas from 'html2canvas';
 import { VideoRecorder } from './report/videoRecorder';
+import { ProblemBanner } from './ProblemBanner';
 
 const BUILT_IN_SHOP_URL = import.meta.env.BASE_URL + 'shop.html';
 
@@ -106,6 +107,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-panel-bg text-panel-text">
+      <ProblemBanner />
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-3 border-b border-panel-border bg-panel-surface backdrop-blur-glass">
         <div className="flex items-center gap-3">
