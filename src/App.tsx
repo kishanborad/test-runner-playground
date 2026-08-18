@@ -7,15 +7,14 @@ import TestListPanel from './panels/TestListPanel';
 import ShopPanel from './panels/ShopPanel';
 import ReportPanel from './panels/ReportPanel';
 import EditorTab from './editor/EditorTab';
-import html2canvas from 'html2canvas';
-import { VideoRecorder } from './report/videoRecorder';
+import type { VideoRecorder } from './report/videoRecorder';
 import { ProblemBanner } from './ProblemBanner';
 
 const BUILT_IN_SHOP_URL = import.meta.env.BASE_URL + 'shop.html';
 
 export default function App() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const videoRef = useRef(new VideoRecorder());
+  const videoRef = useRef<VideoRecorder | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [source, setSource] = useState('');
   const [tab, setTab] = useState<'list' | 'editor'>('list');
@@ -61,6 +60,10 @@ export default function App() {
     }
 
     const startedAt = Date.now();
+    if (!videoRef.current) {
+      const { VideoRecorder } = await import('./report/videoRecorder');
+      videoRef.current = new VideoRecorder();
+    }
     videoRef.current.start(iframe);
 
     try {
@@ -82,6 +85,7 @@ export default function App() {
           try {
             const doc = iframe.contentDocument;
             if (!doc?.body) return undefined;
+            const { default: html2canvas } = await import('html2canvas');
             const canvas = await html2canvas(doc.body, {
               width: iframe.clientWidth,
               height: iframe.clientHeight,
@@ -100,7 +104,7 @@ export default function App() {
       setRunning(false);
       setCursorPos(null);
       setHighlight(null);
-      const blob = await videoRef.current.stop();
+      const blob = await videoRef.current?.stop();
       if (blob) setVideoBlob(blob);
     }
   }, [source, running]);
